@@ -7,6 +7,8 @@ using System;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using Quartz;
+using Quartz.Impl;
 
 namespace VIR.Services
 {
@@ -16,6 +18,8 @@ namespace VIR.Services
         private readonly CommandService __commands;
         private readonly DiscordSocketClient __client;
         private readonly IServiceProvider __services;
+        public IScheduler scheduler;
+        
 
         public CommandHandlingService(IServiceProvider services)
         {
@@ -26,12 +30,15 @@ namespace VIR.Services
             //__commands.CommandExecuted += CommandExecutedAsync;
             __commands.Log += Logging;
             __client.MessageReceived += MessageReceivedAsync;
+            
 
         }
 
         public async Task InitializeAsync()
         {
             await __commands.AddModulesAsync(Assembly.GetEntryAssembly(), __services);
+            scheduler = await StdSchedulerFactory.GetDefaultScheduler();
+            await scheduler.Start();
         }
 
         public async Task MessageReceivedAsync(SocketMessage msg)
@@ -91,24 +98,29 @@ namespace VIR.Services
         }
 
         /// <summary>
-        /// Posts a message to the specified channel
+        /// Posts a message to the specified channel, and returns the ID of the message.
         /// </summary>
         /// <param name="channel">The channel to post the message in</param>
         /// <param name="message">The message to be posted.</param>
         /// <returns></returns>
-        public async Task PostMessageTask(string channel, string message)
+        public async Task<Discord.Rest.RestUserMessage> PostMessageTask(string channel, string message)
         {
-            await ((ISocketMessageChannel)__client.GetChannel(Convert.ToUInt64(channel))).SendMessageAsync(message);
+            return await ((ISocketMessageChannel)__client.GetChannel(Convert.ToUInt64(channel))).SendMessageAsync(message);
         }
 
         /// <summary>
-        /// Posts an embed to the specified channel
+        /// Posts an embed to the specified channel, and returns the ID of the message.
         /// </summary>
         /// <param name="channel">The channel to post the message in</param>
         /// <param name="embed">The embed to be posted.</param>
-        public async Task PostEmbedTask(string channel, Embed embed)
+        public async Task<Discord.Rest.RestUserMessage> PostEmbedTask(string channel, Embed embed)
         {
-            await ((ISocketMessageChannel)__client.GetChannel(Convert.ToUInt64(channel))).SendMessageAsync("", false, embed);
+            return await ((ISocketMessageChannel)__client.GetChannel(Convert.ToUInt64(channel))).SendMessageAsync("", false, embed);
+        }
+
+        public async Task EditEmbedTask(string channel, string messageID, Embed embed)
+        {
+            await ((Discord.Rest.RestUserMessage)await ((ISocketMessageChannel)__client.GetChannel(ulong.Parse(channel))).GetMessageAsync(ulong.Parse(messageID))).ModifyAsync(x => x.Embed = embed);
         }
 
         ///<summary>
@@ -117,6 +129,16 @@ namespace VIR.Services
         public async Task<IEnumerable<CommandInfo>> getCommands()
         {
             return __commands.Commands;
+        }
+
+        public async Task deleteMessageTask(string channelid, string messageid)
+        {
+            await ((ISocketMessageChannel)__client.GetChannel(Convert.ToUInt64(channelid))).DeleteMessageAsync(Convert.ToUInt64(messageid));
+        }
+
+        public async Task sendDMTask(string userid, string message)
+        {
+            await __client.GetUser(ulong.Parse(userid)).SendMessageAsync(message);
         }
     }
 }

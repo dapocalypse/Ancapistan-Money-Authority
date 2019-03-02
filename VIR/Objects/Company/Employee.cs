@@ -11,7 +11,6 @@ namespace VIR.Modules.Objects.Company
         public int wageEarned;
         public Employee()
         {
-
         }
         public Employee(JObject obj)
         {

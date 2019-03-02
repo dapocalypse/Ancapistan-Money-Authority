@@ -71,5 +71,22 @@ namespace VIR.Modules
             await ReplyAsync("The help list has been DMed to you.");
             await Context.User.SendMessageAsync(null, false, embed.Build());
         }
+
+        [HasMasterOfBots]
+        [Command("echo")]
+        public async Task EchoAsync(ITextChannel channel,[Remainder] string contents)
+        {
+            await comhan.PostMessageTask(channel.Id.ToString(), contents);
+        }
+
+        [HasMasterOfBots]
+        [Command("timeTest")]
+        public async Task timeTest(string hours, string minutes)
+        {
+            int hoursi = int.Parse(hours);
+            int minutesi = int.Parse(minutes);
+            DateTime time = DateTime.UtcNow.AddHours(hoursi).AddMinutes(minutesi);
+            await ReplyAsync(time.ToFileTimeUtc().ToString());
+        }
     }
 }

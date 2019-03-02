@@ -1,7 +1,7 @@
 ﻿using System.Net.Http;
-using System.IO;
 using System.Threading.Tasks;
 using Discord;
+using Discord.Net;
 using Discord.Commands;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,19 +12,32 @@ namespace VIR
 {
     class Root
     {
-
+        static ServiceProvider servicess;
         static void Main(string[] args) => new Root().MainAsync().GetAwaiter().GetResult(); //Start Main Task, this logs the bot in.
 
         public async Task MainAsync()
         {
+            bool isDebugMode = false;
+            #if DEBUG
+            isDebugMode = true;
+            #endif
 
             using (var services = ConfigureServices())
             {
                 var __client = services.GetRequiredService<DiscordSocketClient>(); //Create a new client in the Client Variable
 
-                __client.Log += LogAsync;
+                servicess = services;
 
-                string botToken = Resources.token;
+                __client.Log += LogAsync;
+                __client.Connected += onConnected;
+                string botToken;
+                if (isDebugMode)
+                {
+                    botToken = Resources.tokendev;
+                } else
+                {
+                    botToken = Resources.tokenpublish;
+                }
 
                 await __client.LoginAsync(TokenType.Bot, botToken); //Log in the bot
                 await __client.StartAsync(); //Start the bot
@@ -33,6 +46,11 @@ namespace VIR
 
                 await Task.Delay(-1); //Prevent stopping the program until it is closed
             }
+        }
+        
+        private async Task onConnected()
+        {
+            await servicess.GetRequiredService<StockMarketService>().InitAuctionSchedulers();
         }
 
         //Logging task
@@ -56,6 +74,8 @@ namespace VIR
                 .AddSingleton<AgeService>() //Age Service, sort of a wrapper for Database Handling Service
                 .AddSingleton<CompanyService>()
                 .AddSingleton<StockMarketService>() // Methods and shit for the Stock Market. #bestservice
+                .AddSingleton<ResourceHandlingService>()
+                .AddSingleton<IndustryService>()
                 .BuildServiceProvider();
         }
     }

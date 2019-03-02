@@ -7,6 +7,8 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using VIR.Properties;
 using Newtonsoft.Json;
+using System.Windows.Forms;
+using VIR.Objects;
 
 namespace VIR.Services
 {
@@ -110,7 +112,7 @@ namespace VIR.Services
         /// <returns></returns>
         public async Task RemoveUserAsync(string userid)
         {
-            await r.Db("wealth").Table("users").Get(userid).Delete().RunAsync(conn);
+            await r.Db("root").Table("users").Get(userid).Delete().RunAsync(conn);
         }
 
         /// <summary>
